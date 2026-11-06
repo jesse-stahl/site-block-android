@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SiteBlock</string>
+    <string name="accessibility_description">SiteBlock uses this to block the apps on your block list and to lock the settings screens that could switch it off while blocking is on. It does not collect or send any data.</string>
+    <string name="admin_disable_warning">Turning this off lets SiteBlock be uninstalled. Turn blocking off in SiteBlock first.</string>
+</resources>
