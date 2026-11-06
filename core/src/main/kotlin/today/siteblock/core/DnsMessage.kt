@@ -8,6 +8,7 @@ object DnsMessage {
     const val TYPE_A = 1
     const val TYPE_AAAA = 28
     const val RCODE_NXDOMAIN = 3
+    private const val TC_FLAG = 0x0200
 
     /** The first question of a QUERY (QR=0), name lowercased without trailing dot; null if malformed. */
     fun parseQuestion(msg: ByteArray): DnsQuestion? {
@@ -33,6 +34,16 @@ object DnsMessage {
         Bytes.put16(out, 6, 0)
         Bytes.put16(out, 8, 0)
         Bytes.put16(out, 10, 0)
+        return out
+    }
+
+    /** True if the message's TC (truncated) flag is set. */
+    fun isTruncated(msg: ByteArray): Boolean = msg.size >= HEADER && (Bytes.u16(msg, 2) and TC_FLAG) != 0
+
+    /** A copy of [msg] with the TC flag set, telling the client the answer was cut short. */
+    fun withTruncatedFlag(msg: ByteArray): ByteArray {
+        val out = msg.copyOf()
+        if (out.size >= HEADER) Bytes.put16(out, 2, Bytes.u16(out, 2) or TC_FLAG)
         return out
     }
 

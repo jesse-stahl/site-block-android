@@ -37,6 +37,15 @@ class GuardRulesTest {
         assertEquals(ALLOW, v(settings, filterOn, "Apps", "Search", "SiteBlock", "Telegram", "X"))
     }
 
+    @Test fun appsListWithDangerWordsInOtherAppNamesIsAllowed() {
+        assertEquals(ALLOW, v(settings, filterOn, "Apps", "SiteBlock", "Proton VPN", "AccuBattery", "Files by Google: Clean storage"))
+        assertEquals(ALLOW, v(settings, filterOn, "Apps", "SiteBlock", "Accessibility Pro"))
+    }
+
+    @Test fun pixelAccessibilityPageBounces() {
+        assertEquals(BOUNCE, v(settings, filterOn, "Accessibility", "Downloaded apps", "SiteBlock", "Off"))
+    }
+
     @Test fun settingsScreensWithoutSiteBlockAreAllowed() {
         assertEquals(ALLOW, v(settings, filterOn, "Display", "Brightness", "Dark mode"))
     }

@@ -140,7 +140,11 @@ private fun FilterCard(state: UiState, actions: HomeActions) {
                 Text(if (left == null) "Web filter paused until you turn it back on." else "Web filter paused. Back on in ${Format.duration(left)}.")
                 Button(onClick = actions.resumeFilter) { Text("Resume web filter now") }
             } else {
-                Text("Web filter is on. Blocked sites won't load in any app.")
+                // Only claim it works when it really runs; the status card above lists why it doesn't.
+                Text(
+                    if (state.runtime.vpnRunning && !state.privateDnsStrict) "Web filter is on. Blocked sites won't load in any app."
+                    else "Web filter should be on but isn't working yet. See the status above.",
+                )
                 Box {
                     OutlinedButton(onClick = { menuOpen = true }, enabled = state.pending == null) { Text("Pause web filter…") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {

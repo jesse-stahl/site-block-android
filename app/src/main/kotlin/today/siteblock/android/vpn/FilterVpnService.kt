@@ -2,13 +2,20 @@ package today.siteblock.android.vpn
 
 import android.content.Intent
 import android.net.VpnService
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.system.OsConstants
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Job
@@ -20,6 +27,7 @@ import today.siteblock.android.system.Notifier
 import today.siteblock.android.system.ServiceNames
 import today.siteblock.core.DnsDecision
 import today.siteblock.core.DnsFilter
+import today.siteblock.core.DnsMessage
 import today.siteblock.core.DohProviders
 import today.siteblock.core.DomainMatcher
 import today.siteblock.core.Ipv4UdpPacket
@@ -77,7 +85,12 @@ class FilterVpnService : VpnService() {
         return START_STICKY
     }
 
+    /** Called on a binder thread; everything here touches main-thread-only state, so hop to main. */
     override fun onRevoke() {
+        Handler(Looper.getMainLooper()).post { handleRevoke() }
+    }
+
+    private fun handleRevoke() {
         val wasWanted = repository.enforcement.value.filterActive
         shutdown()
         if (wasWanted) {
@@ -103,6 +116,9 @@ class FilterVpnService : VpnService() {
             .addRoute(FAKE_DNS, 32)
             .setBlocking(true)
             .setMetered(false)
+            // We only add IPv4 config, and an unconfigured family is blocked by default. Let IPv6
+            // traffic fall through to the real network instead of cutting it off.
+            .allowFamily(OsConstants.AF_INET6)
         DohProviders.ipv4Addresses.forEach { builder.addRoute(it, 32) }
         val pfd = try {
             builder.establish()
@@ -176,10 +192,15 @@ class FilterVpnService : VpnService() {
                 upstream.network?.bindSocket(socket)
                 socket.soTimeout = UPSTREAM_TIMEOUT_MS
                 socket.send(DatagramPacket(request.payload, request.payload.size, upstream.address, 53))
-                val answer = ByteArray(MAX_DNS_RESPONSE)
+                val answer = ByteArray(MAX_UDP_ANSWER)
                 val packet = DatagramPacket(answer, answer.size)
                 socket.receive(packet)
-                val reply = request.reply(answer.copyOf(packet.length)).toBytes()
+                var payload = answer.copyOf(packet.length)
+                // A datagram that filled the buffer may have been cut off: say so instead of passing on a broken message.
+                if (packet.length == MAX_UDP_ANSWER) payload = DnsMessage.withTruncatedFlag(payload)
+                // The tunnel only carries UDP, so the client can't retry over TCP itself. Do it for it.
+                if (DnsMessage.isTruncated(payload)) queryOverTcp(request.payload, upstream)?.let { payload = it }
+                val reply = request.reply(payload).toBytes()
                 synchronized(output) { output.write(reply) }
             }
         } catch (e: IOException) {
@@ -188,11 +209,35 @@ class FilterVpnService : VpnService() {
         }
     }
 
+    /** Full answer over TCP (RFC 7766 length-prefixed), or null if it fails or won't fit back through the tunnel. */
+    private fun queryOverTcp(query: ByteArray, upstream: Upstream): ByteArray? = try {
+        Socket().use { socket ->
+            protect(socket)
+            upstream.network?.bindSocket(socket)
+            socket.soTimeout = UPSTREAM_TIMEOUT_MS
+            socket.connect(InetSocketAddress(upstream.address, 53), UPSTREAM_TIMEOUT_MS)
+            val out = DataOutputStream(socket.getOutputStream())
+            out.writeShort(query.size)
+            out.write(query)
+            out.flush()
+            val input = DataInputStream(socket.getInputStream())
+            val length = input.readUnsignedShort()
+            if (length > MAX_UDP_ANSWER) {
+                null
+            } else {
+                ByteArray(length).also { input.readFully(it) }
+            }
+        }
+    } catch (e: IOException) {
+        null
+    }
+
     companion object {
         const val TUN_ADDRESS = "10.111.222.1"
         const val FAKE_DNS = "10.111.222.2"
         private const val MTU = 4500
-        private const val MAX_DNS_RESPONSE = 4096
+        /** Largest DNS answer that still fits in one tunnel packet (MTU minus IPv4 + UDP headers). */
+        private const val MAX_UDP_ANSWER = MTU - 28
         private const val UPSTREAM_TIMEOUT_MS = 5_000
         private const val FORWARD_THREADS = 4
     }

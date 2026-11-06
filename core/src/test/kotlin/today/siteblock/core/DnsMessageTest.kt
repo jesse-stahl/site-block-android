@@ -48,4 +48,14 @@ class DnsMessageTest {
     @Test fun blockedResponseOfGarbageIsNull() {
         assertNull(DnsMessage.blockedResponse(ByteArray(3)))
     }
+
+    @Test fun detectsAndSetsTheTruncatedFlag() {
+        val reply = dnsQuery(5, "x.com", flags = 0x8180)
+        assertEquals(false, DnsMessage.isTruncated(reply))
+        val marked = DnsMessage.withTruncatedFlag(reply)
+        assertEquals(true, DnsMessage.isTruncated(marked))
+        assertEquals(0x8380, Bytes.u16(marked, 2))
+        assertEquals(0x8180, Bytes.u16(reply, 2)) // original untouched
+        assertEquals(false, DnsMessage.isTruncated(ByteArray(2)))
+    }
 }

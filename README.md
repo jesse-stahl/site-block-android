@@ -39,4 +39,9 @@ Then open SiteBlock and work through **Setup**. See [`docs/MANUAL_VERIFICATION.m
 - **Safe Mode** turns off all third-party apps, SiteBlock included. A future "Device Owner" mode would close this.
 - Telegram **link previews** (text shown inside the chat) come from Telegram's servers, so the
   filter can't stop them. Blocking `twimg.com` stops X images and video in them.
+- The settings lock reads on-screen text in English. With the phone set to another language it
+  may not recognise SiteBlock's App info page.
+- The web filter covers DNS lookups that use the phone's normal DNS (every app that doesn't
+  hard-code its own DNS server). An app that sends DNS straight to a fixed server it chose itself
+  can skip it.
 - Only one VPN can run at a time. Pause the web filter (behind the gate) to use another VPN.
