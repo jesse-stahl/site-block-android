@@ -40,8 +40,13 @@ class BlockerAccessibilityService : AccessibilityService() {
         val enforcement = repository.enforcement.value
         if (!enforcement.blockingOn) return
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && pkg in enforcement.appPackages) {
-            block(pkg)
+        if (pkg in enforcement.appPackages) {
+            // With notificationTimeout > 0 the system keeps only the latest pending event per type,
+            // so a blocked app's STATE_CHANGED can be replaced by e.g. a permission dialog's. Its
+            // content events still arrive: block on those too, if it really owns the active window.
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+                rootInActiveWindow?.packageName?.toString() == pkg
+            ) block(pkg)
             return
         }
 
