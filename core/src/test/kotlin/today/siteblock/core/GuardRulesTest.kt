@@ -37,6 +37,12 @@ class GuardRulesTest {
         assertEquals(ALLOW, v(settings, filterOn, "Apps", "Search", "SiteBlock", "Telegram", "X"))
     }
 
+    @Test fun ownAccessibilityDetailPageBouncesOnPixelAndSamsung() {
+        val description = "SiteBlock uses this to block the apps on your block list and to lock the settings screens that could switch it off while blocking is on."
+        assertEquals(BOUNCE, v(settings, filterPaused, "SiteBlock", "Use SiteBlock", "SiteBlock shortcut", description))
+        assertEquals(BOUNCE, v(settings, filterPaused, "SiteBlock", "On", description))
+    }
+
     @Test fun appsListWithDangerWordsInOtherAppNamesIsAllowed() {
         assertEquals(ALLOW, v(settings, filterOn, "Apps", "SiteBlock", "Proton VPN", "AccuBattery", "Files by Google: Clean storage"))
         assertEquals(ALLOW, v(settings, filterOn, "Apps", "SiteBlock", "Accessibility Pro"))

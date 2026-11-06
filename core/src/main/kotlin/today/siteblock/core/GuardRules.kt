@@ -33,7 +33,14 @@ object GuardRules {
         "storage", "battery", "permissions", "notifications", "open by default", "mobile data",
         "deactivate", "deactivate this device admin app", "device admin apps", "device admin app",
         "accessibility", "installed apps", "installed services", "downloaded apps", "vpn",
+        "use siteblock", "siteblock shortcut",
     )
+
+    /**
+     * Start of SiteBlock's own accessibility description (res/values/strings.xml). It appears on
+     * the service's detail page, which holds the on/off switch, on every Android flavor.
+     */
+    private const val OWN_DESCRIPTION_PREFIX = "siteblock uses this to block"
 
     fun verdict(packageName: String, screenTexts: List<String>, enforcement: Enforcement): Verdict {
         if (!enforcement.guardActive || packageName !in guardedPackages) return Verdict.ALLOW
@@ -48,6 +55,7 @@ object GuardRules {
         val networkScreen = texts.any { it == "vpn" }
         if (networkScreen && !enforcement.guardNetworkSettings) return Verdict.ALLOW
 
+        if (texts.any { it.startsWith(OWN_DESCRIPTION_PREFIX) }) return Verdict.BOUNCE
         return if (texts.any { it in dangerousLabels }) Verdict.BOUNCE else Verdict.ALLOW
     }
 }

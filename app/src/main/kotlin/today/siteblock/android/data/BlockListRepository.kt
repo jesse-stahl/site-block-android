@@ -218,8 +218,14 @@ class BlockListRepository(
         val text = try {
             listFile.read()
         } catch (e: IOException) {
-            problem = "Couldn't read your block list: ${e.message}"
-            return BlockList()
+            // Retry once; if it still fails, keep a copy so the next save can't silently destroy the list.
+            try {
+                listFile.read()
+            } catch (again: IOException) {
+                listFile.backupTo("blocklist.unreadable.json")
+                problem = "Couldn't read your block list (${again.message}). A copy is kept as blocklist.unreadable.json."
+                return BlockList()
+            }
         } ?: return BlockList()
         return try {
             BlockListCodec.decode(text)

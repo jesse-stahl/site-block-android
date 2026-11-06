@@ -32,6 +32,11 @@ class CatalogTest {
         for (ip in DohProviders.ipv4Addresses) assertEquals(ip, Ipv4UdpPacketIpCheck.roundTrip(ip))
         assertTrue("use-application-dns.net" in DohProviders.hostnames)
         assertTrue("1.1.1.1" in DohProviders.ipv4Addresses)
+        for (ip in DohProviders.ipv6Addresses) {
+            assertTrue(ip, java.net.InetAddress.getByName(ip) is java.net.Inet6Address)
+        }
+        assertTrue("2606:4700:4700::1111" in DohProviders.ipv6Addresses)
+        assertTrue("2001:4860:4860::8888" in DohProviders.ipv6Addresses)
     }
 }
 

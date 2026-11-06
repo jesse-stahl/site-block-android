@@ -120,6 +120,10 @@ class FilterVpnService : VpnService() {
             // traffic fall through to the real network instead of cutting it off.
             .allowFamily(OsConstants.AF_INET6)
         DohProviders.ipv4Addresses.forEach { builder.addRoute(it, 32) }
+        // An IPv6 address lets us route the providers' IPv6 addresses in too. Their packets aren't
+        // IPv4/UDP, so DnsFilter drops them, exactly like TCP to the IPv4 provider addresses.
+        builder.addAddress(TUN_ADDRESS_V6, 128)
+        DohProviders.ipv6Addresses.forEach { builder.addRoute(it, 128) }
         val pfd = try {
             builder.establish()
         } catch (e: Exception) {
@@ -212,9 +216,9 @@ class FilterVpnService : VpnService() {
     /** Full answer over TCP (RFC 7766 length-prefixed), or null if it fails or won't fit back through the tunnel. */
     private fun queryOverTcp(query: ByteArray, upstream: Upstream): ByteArray? = try {
         Socket().use { socket ->
-            protect(socket)
+            socket.soTimeout = UPSTREAM_TIMEOUT_MS // creates the fd; protect() on a fd-less socket silently does nothing
+            if (!protect(socket)) return null
             upstream.network?.bindSocket(socket)
-            socket.soTimeout = UPSTREAM_TIMEOUT_MS
             socket.connect(InetSocketAddress(upstream.address, 53), UPSTREAM_TIMEOUT_MS)
             val out = DataOutputStream(socket.getOutputStream())
             out.writeShort(query.size)
@@ -235,6 +239,7 @@ class FilterVpnService : VpnService() {
     companion object {
         const val TUN_ADDRESS = "10.111.222.1"
         const val FAKE_DNS = "10.111.222.2"
+        const val TUN_ADDRESS_V6 = "fd00:5b10:c4b1::1"
         private const val MTU = 4500
         /** Largest DNS answer that still fits in one tunnel packet (MTU minus IPv4 + UDP headers). */
         private const val MAX_UDP_ANSWER = MTU - 28
