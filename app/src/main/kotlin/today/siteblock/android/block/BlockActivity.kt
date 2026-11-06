@@ -8,7 +8,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -43,7 +45,10 @@ class BlockActivity : ComponentActivity() {
         val count = intent.getIntExtra(EXTRA_COUNT, 0)
         setContent {
             MaterialTheme {
-                Surface(Modifier.fillMaxSize()) { BlockScreen(label, count, ::goHome) }
+                Surface(Modifier.fillMaxSize()) {
+                    // targetSdk 35+ draws edge-to-edge: keep content clear of the status bar, nav bar and keyboard.
+                    Box(Modifier.fillMaxSize().safeDrawingPadding()) { BlockScreen(label, count, ::goHome) }
+                }
             }
         }
     }

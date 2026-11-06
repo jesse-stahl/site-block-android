@@ -4,7 +4,9 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -31,7 +33,10 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                Surface(Modifier.fillMaxSize()) { AppRoot() }
+                Surface(Modifier.fillMaxSize()) {
+                    // targetSdk 35+ draws edge-to-edge: keep content clear of the status bar, nav bar and keyboard.
+                    Box(Modifier.fillMaxSize().safeDrawingPadding()) { AppRoot() }
+                }
             }
         }
     }
