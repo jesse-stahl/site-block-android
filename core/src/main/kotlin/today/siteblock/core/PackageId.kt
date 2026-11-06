@@ -15,6 +15,7 @@ object PackageId {
     val neverBlock: Set<String> = setOf(
         SELF,
         "com.android.settings",
+        "com.samsung.accessibility",
         "com.android.systemui",
         "com.android.phone",
         "com.android.server.telecom",

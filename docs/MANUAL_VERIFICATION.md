@@ -43,6 +43,10 @@ Each should send you to the home screen with a "SiteBlock locks this screen" toa
 
 Should NOT bounce: Settings → Apps (the full list), Display, Sound, Wi-Fi.
 
+If a screen that should bounce doesn't, run `adb shell dumpsys window | grep mCurrentFocus` while it's open.
+The package shown must be in `GuardRules.guardedPackages` (Samsung uses `com.android.settings` and
+`com.samsung.accessibility`). If it's a different package, add it there.
+
 ## 4. Web filter pause
 
 | # | Do this | Expect |

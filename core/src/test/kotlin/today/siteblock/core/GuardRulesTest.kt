@@ -43,6 +43,11 @@ class GuardRulesTest {
         assertEquals(BOUNCE, v(settings, filterPaused, "SiteBlock", "On", description))
     }
 
+    @Test fun samsungAccessibilityPackageIsGuarded() {
+        assertEquals(BOUNCE, v("com.samsung.accessibility", filterPaused, "Installed apps", "SiteBlock", "Off"))
+        assertEquals(false, PackageId.isBlockable("com.samsung.accessibility"))
+    }
+
     @Test fun appsListWithDangerWordsInOtherAppNamesIsAllowed() {
         assertEquals(ALLOW, v(settings, filterOn, "Apps", "SiteBlock", "Proton VPN", "AccuBattery", "Files by Google: Clean storage"))
         assertEquals(ALLOW, v(settings, filterOn, "Apps", "SiteBlock", "Accessibility Pro"))

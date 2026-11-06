@@ -20,7 +20,8 @@ object GuardRules {
     )
 
     /** Only events from these packages are ever inspected. */
-    val guardedPackages: Set<String> = setOf("com.android.settings", "com.samsung.android.settings", VPN_DIALOGS) + installers
+    val guardedPackages: Set<String> =
+        setOf("com.android.settings", "com.samsung.android.settings", "com.samsung.accessibility", VPN_DIALOGS) + installers
 
     /**
      * Whole labels (exact, case-insensitive) that, next to "SiteBlock", mark a screen that can
