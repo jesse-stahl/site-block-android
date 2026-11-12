@@ -5,6 +5,7 @@ sealed interface PendingWeaken {
     data object TurnOff : PendingWeaken
     data class Remove(val itemId: String) : PendingWeaken
     data class PauseFilter(val duration: PauseDuration) : PendingWeaken
+    data class Whitelist(val packageId: String, val label: String) : PendingWeaken
 }
 
 /**
@@ -45,6 +46,8 @@ class GateController(
 
     fun resumeFilter(): Boolean = commitIf(if (list.filterPause == null) null else list.copy(filterPause = null))
 
+    fun removeFromWhitelist(packageId: String): Boolean = commitIf(list.withoutWhitelisted(packageId))
+
     // ---- allowed only while off (blocking off already paid the gate) ----
 
     fun pause(itemId: String): Boolean = commitIf(if (list.blockingOn) null else list.withPaused(itemId, true))
@@ -64,6 +67,12 @@ class GateController(
 
     fun requestPauseFilter(duration: PauseDuration, now: Long): Boolean =
         begin(if (enforcement(now).filterActive) PendingWeaken.PauseFilter(duration) else null, now)
+
+    /** Gated even while blocking is off, like Remove: the hole would outlast turning blocking back on. */
+    fun requestWhitelist(packageId: String, label: String, now: Long): Boolean {
+        val added = list.withWhitelisted(packageId, label)?.whitelist?.last()
+        return begin(added?.let { PendingWeaken.Whitelist(it.packageId, it.label) }, now)
+    }
 
     fun cancelPending() {
         pending = null
@@ -103,6 +112,7 @@ class GateController(
             is PendingWeaken.PauseFilter -> commit(
                 list.copy(filterPause = FilterPause(expected.duration.millis?.let { now + it }, bootCount)),
             )
+            is PendingWeaken.Whitelist -> list.withWhitelisted(expected.packageId, expected.label)?.let { commit(it) }
         }
         return true
     }

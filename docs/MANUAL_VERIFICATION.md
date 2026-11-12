@@ -57,6 +57,16 @@ The package shown must be in `GuardRules.guardedPackages` (Samsung uses `com.and
 | 4.4 | Pause "until I turn it back on", reboot | Still paused after reboot |
 | 4.5 | During a pause, open VPN settings | Not bounced (so you can use another VPN) |
 
+## 4b. Whitelist
+
+| # | Do this | Expect |
+| --- | --- | --- |
+| 4b.1 | Web filter on, WhatsApp whitelisted (default): make a WhatsApp video call | Call connects |
+| 4b.2 | Whitelist → Remove WhatsApp | Removed at once, no gate; WhatsApp calls stay on "Connecting" again |
+| 4b.3 | Whitelist → pick an app → Whitelist… | Back on Home with a pending card; it needs the full wait + PIN, even with blocking off |
+| 4b.4 | Confirm with PIN | App appears on the whitelist; `adb shell dumpsys connectivity` shows its uid outside the VPN's `Uids` ranges |
+| 4b.5 | Whitelist Chrome, open a blocked site in Chrome | Site loads (whitelisted apps skip the filter); remove Chrome again |
+
 ## 5. Failure states
 
 | # | Do this | Expect |

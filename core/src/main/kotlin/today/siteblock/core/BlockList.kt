@@ -14,6 +14,8 @@ data class BlockList(
     val blockingOn: Boolean = false,
     val settings: FrictionSettings = FrictionSettings(),
     val filterPause: FilterPause? = null,
+    /** Apps that skip the web filter. Adding is a weaken action (gated); removing is instant. */
+    val whitelist: List<WhitelistedApp> = WhitelistedApp.DEFAULTS,
 ) {
     fun item(id: String): BlockItem? = items.firstOrNull { it.id == id }
 
@@ -57,6 +59,19 @@ data class BlockList(
         return copy(pausedIds = if (paused) pausedIds + id else pausedIds - id)
     }
 
+    fun isWhitelisted(packageId: String): Boolean = whitelist.any { it.packageId == packageId }
+
+    fun withWhitelisted(rawPackageId: String, label: String): BlockList? {
+        val id = PackageId.normalize(rawPackageId) ?: return null
+        if (!WhitelistedApp.isAllowed(id) || isWhitelisted(id)) return null
+        return copy(whitelist = whitelist + WhitelistedApp(id, label.trim().ifEmpty { id }))
+    }
+
+    fun withoutWhitelisted(packageId: String): BlockList? {
+        if (!isWhitelisted(packageId)) return null
+        return copy(whitelist = whitelist.filterNot { it.packageId == packageId })
+    }
+
     /** Repair anything a hand-edited or older file might contain. */
     fun normalized(): BlockList {
         val uniqueItems = items.distinctBy { it.id }
@@ -65,6 +80,7 @@ data class BlockList(
             items = uniqueItems,
             pausedIds = pausedIds.distinct().filter { it in ids },
             settings = settings.clamped(),
+            whitelist = whitelist.filter { WhitelistedApp.isAllowed(it.packageId) }.distinctBy { it.packageId },
         )
     }
 }

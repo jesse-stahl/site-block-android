@@ -22,7 +22,7 @@ import today.siteblock.android.system.DeviceCredential
 import today.siteblock.android.system.SetupChecks
 import today.siteblock.android.system.SetupStatus
 
-private enum class Screen { HOME, ADD, TIMERS, SETUP }
+private enum class Screen { HOME, ADD, TIMERS, SETUP, WHITELIST }
 
 /** FragmentActivity (not ComponentActivity) because BiometricPrompt needs one. */
 class MainActivity : FragmentActivity() {
@@ -72,6 +72,7 @@ class MainActivity : FragmentActivity() {
                     openAdd = { screen = Screen.ADD },
                     openTimers = { screen = Screen.TIMERS },
                     openSetup = { screen = Screen.SETUP },
+                    openWhitelist = { screen = Screen.WHITELIST },
                 ),
             )
             Screen.ADD -> AddScreen(
@@ -85,6 +86,13 @@ class MainActivity : FragmentActivity() {
                 state = state,
                 onWait = { repository.setWaitMinutes(it) },
                 onConfirm = { repository.setConfirmMinutes(it) },
+                onBack = back,
+            )
+            Screen.WHITELIST -> WhitelistScreen(
+                state = state,
+                // The countdown and PIN confirm live on the home screen's pending card.
+                onRequestAdd = { id, label -> repository.requestWhitelist(id, label).also { if (it) back() } },
+                onRemove = { repository.removeFromWhitelist(it) },
                 onBack = back,
             )
             Screen.SETUP -> SetupScreen(

@@ -79,6 +79,7 @@ class BlockListRepository(
     fun addBuiltin(entry: CatalogEntry): Boolean = act { controller.addBuiltin(entry) }
     fun resume(itemId: String): Boolean = act { controller.resume(itemId) }
     fun resumeFilter(): Boolean = act { controller.resumeFilter() }
+    fun removeFromWhitelist(packageId: String): Boolean = act { controller.removeFromWhitelist(packageId) }
 
     // ---- only while off ----
     fun pause(itemId: String): Boolean = act { controller.pause(itemId) }
@@ -89,6 +90,7 @@ class BlockListRepository(
     fun requestTurnOff(): Boolean = act { controller.requestTurnOff(clock()) }
     fun requestRemove(itemId: String): Boolean = act { controller.requestRemove(itemId, clock()) }
     fun requestPauseFilter(duration: PauseDuration): Boolean = act { controller.requestPauseFilter(duration, clock()) }
+    fun requestWhitelist(packageId: String, label: String): Boolean = act { controller.requestWhitelist(packageId, label, clock()) }
     fun cancelPending(): Boolean = act { controller.cancelPending(); true }
     fun canConfirmNow(): Boolean = controller.canConfirm(clock())
 

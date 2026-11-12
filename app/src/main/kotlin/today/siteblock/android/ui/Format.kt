@@ -25,6 +25,7 @@ object Format {
         is PendingWeaken.PauseFilter ->
             if (pending.duration == PauseDuration.UNTIL_RESUMED) "Pause the web filter until you turn it back on"
             else "Pause the web filter for ${pending.duration.label}"
+        is PendingWeaken.Whitelist -> "Let ${pending.label} skip the web filter"
     }
 
     fun summary(item: BlockItem): String {

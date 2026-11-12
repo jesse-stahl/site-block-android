@@ -44,6 +44,7 @@ class HomeActions(
     val openAdd: () -> Unit,
     val openTimers: () -> Unit,
     val openSetup: () -> Unit,
+    val openWhitelist: () -> Unit,
 )
 
 @Composable
@@ -77,6 +78,11 @@ fun HomeScreen(state: UiState, setupComplete: Boolean, actions: HomeActions) {
                 Button(onClick = actions.openAdd) { Text("Add") }
                 OutlinedButton(onClick = actions.openTimers) { Text("Timers") }
                 OutlinedButton(onClick = actions.openSetup) { Text("Setup") }
+            }
+        }
+        item {
+            OutlinedButton(onClick = actions.openWhitelist) {
+                Text("Whitelist (${state.list.whitelist.size})")
             }
         }
         if (state.list.items.isEmpty()) {

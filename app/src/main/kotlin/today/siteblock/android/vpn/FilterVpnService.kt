@@ -1,6 +1,7 @@
 package today.siteblock.android.vpn
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Handler
 import android.os.Looper
@@ -43,6 +44,8 @@ class FilterVpnService : VpnService() {
     private var tun: ParcelFileDescriptor? = null
     private var worker: Thread? = null
     private var collectJob: Job? = null
+    /** The whitelist the current tunnel was built with (Android fixes it at establish time). */
+    private var exempt: Set<String> = emptySet()
     private lateinit var resolver: UpstreamResolver
 
     @Volatile private var filter = DnsFilter(DomainMatcher(emptyList()))
@@ -66,9 +69,13 @@ class FilterVpnService : VpnService() {
             return START_NOT_STICKY
         }
         filter = DnsFilter(DomainMatcher(enforcement.filterDomains))
-        if (tun == null && !establish()) {
-            stopSelf()
-            return START_NOT_STICKY
+        if (tun == null) {
+            if (!establish(enforcement.vpnExemptPackages)) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        } else if (enforcement.vpnExemptPackages != exempt) {
+            retunnel(enforcement.vpnExemptPackages)
         }
         if (collectJob == null) {
             collectJob = scope.launch {
@@ -78,6 +85,7 @@ class FilterVpnService : VpnService() {
                         stopSelf()
                     } else {
                         filter = DnsFilter(DomainMatcher(e.filterDomains))
+                        if (tun != null && e.vpnExemptPackages != exempt) retunnel(e.vpnExemptPackages)
                     }
                 }
             }
@@ -107,7 +115,26 @@ class FilterVpnService : VpnService() {
         super.onDestroy()
     }
 
-    private fun establish(): Boolean {
+    /** Main-thread only. Rebuild the tunnel with a new whitelist, then retire the old one. */
+    private fun retunnel(exemptPackages: Set<String>) {
+        val oldTun = tun
+        val oldWorker = worker
+        tun = null
+        worker = null
+        val ok = establish(exemptPackages)
+        try {
+            oldTun?.close()
+        } catch (e: IOException) {
+            // already closed
+        }
+        oldWorker?.interrupt()
+        if (!ok) {
+            shutdown()
+            stopSelf()
+        }
+    }
+
+    private fun establish(exemptPackages: Set<String>): Boolean {
         val builder = Builder()
             .setSession("SiteBlock web filter")
             .setMtu(MTU)
@@ -124,6 +151,14 @@ class FilterVpnService : VpnService() {
         // IPv4/UDP, so DnsFilter drops them, exactly like TCP to the IPv4 provider addresses.
         builder.addAddress(TUN_ADDRESS_V6, 128)
         DohProviders.ipv6Addresses.forEach { builder.addRoute(it, 128) }
+        // Whitelisted apps stay on the real network (see WhitelistedApp).
+        exemptPackages.forEach { pkg ->
+            try {
+                builder.addDisallowedApplication(pkg)
+            } catch (e: PackageManager.NameNotFoundException) {
+                // Not installed: nothing to exempt.
+            }
+        }
         val pfd = try {
             builder.establish()
         } catch (e: Exception) {
@@ -134,6 +169,7 @@ class FilterVpnService : VpnService() {
             return false
         }
         tun = pfd
+        exempt = exemptPackages
         worker = Thread({ runLoop(pfd) }, "siteblock-dns").also { it.start() }
         repository.setVpnRunning(true, null)
         Notifier.clear(this, Notifier.ID_VPN)
