@@ -20,6 +20,7 @@ A private, single-user Android app that blocks distracting apps and websites wit
 | Web filter (`FilterVpnService`) | A local VPN that only carries DNS lookups. Blocked names get "not found". Other traffic never enters it, so there's no speed cost. Also blocks known encrypted-DNS services so browsers can't skip it. |
 | App blocker (`BlockerAccessibilityService`) | Sees which app comes to the front. If its ID is blocked, shows a full-screen block page with today's attempt count. While blocking is on, it also bounces you out of the settings screens that could switch SiteBlock off. |
 | Device admin | Stops SiteBlock from being uninstalled while it's active. |
+| Whitelist | Apps the web filter leaves alone, for apps the VPN breaks (WhatsApp calls stay stuck on "Connecting" inside it). WhatsApp and WhatsApp Business are on it by default. Adding an app goes through the gate; removing one is instant. App blocking still applies to whitelisted apps. |
 
 ## Build and install
 
@@ -44,4 +45,6 @@ Then open SiteBlock and work through **Setup**. See [`docs/MANUAL_VERIFICATION.m
 - The web filter covers DNS lookups that use the phone's normal DNS (every app that doesn't
   hard-code its own DNS server). An app that sends DNS straight to a fixed server it chose itself
   can skip it.
+- A whitelisted app's own DNS lookups aren't filtered, so blocked sites can load inside it
+  (for example, link previews in WhatsApp). Links it opens in your browser are still filtered.
 - Only one VPN can run at a time. Pause the web filter (behind the gate) to use another VPN.

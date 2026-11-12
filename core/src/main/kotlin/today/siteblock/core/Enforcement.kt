@@ -8,6 +8,8 @@ data class Enforcement(
     val filterDomains: List<String>,
     val filterActive: Boolean,
     val filterPaused: Boolean,
+    /** Whitelisted apps the VPN must leave out; empty when the filter is off. */
+    val vpnExemptPackages: Set<String> = emptySet(),
 ) {
     /** The settings guard runs whenever blocking is on. */
     val guardActive: Boolean get() = blockingOn
@@ -44,6 +46,7 @@ object EnforcementPolicy {
             filterDomains = if (filterActive) (userDomains + DohProviders.hostnames).distinct() else emptyList(),
             filterActive = filterActive,
             filterPaused = paused,
+            vpnExemptPackages = if (filterActive) list.whitelist.map { it.packageId }.toSet() else emptySet(),
         )
     }
 }
